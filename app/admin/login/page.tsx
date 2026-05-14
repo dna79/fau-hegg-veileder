@@ -9,7 +9,7 @@ export default function AdminLoginPage() {
 
   return (
     <main className="min-h-screen bg-emerald-50 text-slate-950">
-      <AppHeader title="Admin" />
+      <AppHeader />
 
       <div className="mx-auto flex max-w-md flex-col gap-6 px-5 py-8 sm:px-8 lg:py-12">
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 sm:p-8">

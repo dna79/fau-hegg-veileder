@@ -319,7 +319,6 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-emerald-50 text-slate-950">
       <AppHeader
-        title="Admin"
         actions={
           <form action={logoutAdmin}>
             <button
