@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminSession } from "@/lib/admin-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -9,6 +10,12 @@ type PublishGuideRequest = {
 };
 
 export async function POST(request: Request) {
+  const unauthorized = await requireAdminSession();
+
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const body = (await request.json()) as PublishGuideRequest;
 

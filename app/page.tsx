@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AppHeader } from "@/components/AppHeader";
 import type { StructuredGuide } from "@/lib/gemini";
 
 type LanguageCode = "nb" | "en" | "pl" | "uk" | "ar" | "so";
@@ -158,17 +159,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-emerald-50 text-slate-950">
-      <header className="bg-emerald-800 px-5 py-5 text-white shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-emerald-100">Hegg skole</p>
-            <h1 className="text-2xl font-bold tracking-tight">FAU veileder</h1>
-          </div>
-          <div className="rounded-full bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm">
-            FAU
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-5 py-6 sm:px-8 lg:py-10">
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 sm:p-8">

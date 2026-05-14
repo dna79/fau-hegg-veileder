@@ -16,6 +16,19 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## MVP configuration
+
+Set `ADMIN_PASSWORD` in `.env.local` and in Vercel to protect `/admin` and all
+`/api/admin/*` routes.
+
+The header is ready to use the FAU logo at:
+
+```text
+public/hegg-skole-fau-logo.png
+```
+
+Place the generated logo file there when it is available.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

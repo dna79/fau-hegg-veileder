@@ -1,6 +1,7 @@
 import { createRequire } from "module";
 import { NextResponse } from "next/server";
 import type pdfParse from "pdf-parse";
+import { requireAdminSession } from "@/lib/admin-auth";
 
 const require = createRequire(import.meta.url);
 const pdf = require("pdf-parse/lib/pdf-parse.js") as typeof pdfParse;
@@ -15,6 +16,12 @@ type ExtractedPdfResponse = {
 };
 
 export async function POST(request: Request) {
+  const unauthorized = await requireAdminSession();
+
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const formData = await request.formData();
     const upload = formData.get("file");

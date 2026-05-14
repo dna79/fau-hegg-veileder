@@ -1,7 +1,9 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useState } from "react";
+import { AppHeader } from "@/components/AppHeader";
 import type { StructuredGuide } from "@/lib/gemini";
+import { logoutAdmin } from "./actions";
 
 const workflowSteps = [
   "Last opp PDF",
@@ -316,27 +318,24 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-emerald-50 text-slate-950">
-      <header className="bg-emerald-800 px-5 py-5 text-white shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-emerald-100">Hegg skole</p>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Admin – Hegg skole veileder
-            </h1>
-          </div>
-          <div className="rounded-full bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm">
-            FAU
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        title="Admin"
+        actions={
+          <form action={logoutAdmin}>
+            <button
+              type="submit"
+              className="rounded-full bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-50"
+            >
+              Logg ut
+            </button>
+          </form>
+        }
+      />
 
       <div className="mx-auto grid max-w-5xl gap-6 px-5 py-6 sm:px-8 lg:grid-cols-3 lg:py-10">
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Current published version
-          </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-emerald-950">
-            Versjon {version}
+            Status
           </h2>
           <p className="mt-3 leading-7 text-slate-700">
             Lagre et utkast mens du arbeider, eller publiser en ny versjon når
@@ -354,11 +353,8 @@ export default function AdminPage() {
         </section>
 
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Upload new PDF
-          </p>
           <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
-            Ny kildefil
+            Last opp PDF
           </h2>
           <form className="mt-5" onSubmit={handleSubmit}>
             <label className="block rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 p-6 text-center transition hover:border-emerald-400">
@@ -394,9 +390,6 @@ export default function AdminPage() {
         </section>
 
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 lg:row-span-2">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Processing workflow
-          </p>
           <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
             Arbeidsflyt
           </h2>
@@ -428,11 +421,8 @@ export default function AdminPage() {
         </section>
 
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 lg:col-span-2">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Translation status
-          </p>
           <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
-            Språk
+            Status
           </h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <article className="flex items-center justify-between gap-3 rounded-2xl bg-emerald-50 p-4">
@@ -464,11 +454,8 @@ export default function AdminPage() {
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 lg:col-span-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                Extracted text preview
-              </p>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
-                Norsk tekst
+                Uthentet tekst
               </h2>
             </div>
             {extractedPdf ? (
@@ -518,9 +505,6 @@ export default function AdminPage() {
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 lg:col-span-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                Structured content preview
-              </p>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
                 Strukturert innhold
               </h2>
@@ -552,11 +536,8 @@ export default function AdminPage() {
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 lg:col-span-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                Translation
-              </p>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
-                Oversett strukturert innhold
+                Oversettelser
               </h2>
             </div>
             {translatedLanguage ? (
@@ -595,9 +576,6 @@ export default function AdminPage() {
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 lg:col-span-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                Translated JSON preview
-              </p>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
                 Oversatt innhold
               </h2>
@@ -628,15 +606,12 @@ export default function AdminPage() {
         </section>
 
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 lg:col-span-3">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Publishing
-          </p>
           <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950">
-            Lagre og publiser
+            Lagring og publisering
           </h2>
           <p className="mt-3 leading-7 text-slate-700">
-            Lagring bruker Supabase service role på serveren. Ingen innlogging er
-            påkrevd i denne MVP-en.
+            Lagring bruker Supabase på serveren. Publisering blir tilgjengelig når
+            et utkast er lagret.
           </p>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">

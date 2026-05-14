@@ -3,6 +3,7 @@ import {
   structureGuideWithGemini,
   validateStructuredGuide,
 } from "@/lib/gemini";
+import { requireAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,12 @@ type StructureGuideRequest = {
 };
 
 export async function POST(request: Request) {
+  const unauthorized = await requireAdminSession();
+
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const body = (await request.json()) as StructureGuideRequest;
 

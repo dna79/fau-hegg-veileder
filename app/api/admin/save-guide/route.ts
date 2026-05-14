@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateStructuredGuide, type StructuredGuide } from "@/lib/gemini";
+import { requireAdminSession } from "@/lib/admin-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 
@@ -38,6 +39,12 @@ function normalizeTranslations(value: unknown) {
 }
 
 export async function POST(request: Request) {
+  const unauthorized = await requireAdminSession();
+
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const body = (await request.json()) as SaveGuideRequest;
     const version =
