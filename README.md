@@ -21,6 +21,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 Set `ADMIN_PASSWORD` in `.env.local` and in Vercel to protect `/admin` and all
 `/api/admin/*` routes.
 
+Set `NEXT_PUBLIC_SITE_URL` in Vercel so QR codes point to the deployed public
+guide, for example:
+
+```text
+NEXT_PUBLIC_SITE_URL=https://fau-hegg-veileder.vercel.app
+```
+
 The header is ready to use the FAU logo at:
 
 ```text
