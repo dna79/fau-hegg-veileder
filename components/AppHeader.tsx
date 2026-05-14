@@ -11,11 +11,11 @@ export function AppHeader({ actions }: AppHeaderProps) {
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
           <Image
-            src="/hegg-skole-fau-logo.png"
+            src="/hegg-skole-fau-logo.svg"
             alt="Hegg skole FAU logo"
-            width={52}
-            height={52}
-            className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14"
+            width={56}
+            height={56}
+            className="h-13 w-13 shrink-0 object-contain sm:h-14 sm:w-14"
             priority
           />
           <div className="min-w-0">
