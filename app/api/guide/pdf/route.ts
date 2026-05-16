@@ -345,27 +345,45 @@ function renderStats(doc: PdfDoc, guide: StructuredGuide) {
 
 function renderBullet(doc: PdfDoc, text: string) {
   const left = doc.page.margins.left;
-  const bulletX = left + 4;
+  const bulletX = left + 2;
   const textX = left + 16;
-  const width = contentWidth(doc) - 16;
+  const textWidth = contentWidth(doc) - 16;
+  const fontSize = 10.5;
+  const lineGap = 3;
+  const spacing = 4;
+  const cleanText = text.trim();
 
-  ensureSpace(doc, 20);
-  doc.font("Regular").fontSize(10.5).fillColor(colors.text).text("-", bulletX, doc.y, {
-    width: 8,
+  if (!cleanText) {
+    return;
+  }
+
+  const textStyle: TextStyle = {
+    width: textWidth,
+    font: "Regular",
+    fontSize,
+    color: colors.text,
+    lineGap,
+  };
+  const requiredHeight = Math.max(fontSize + lineGap, textHeight(doc, cleanText, textStyle));
+
+  ensureSpace(doc, requiredHeight + spacing);
+
+  if (requiredHeight > availableHeight(doc)) {
+    startNewPage(doc);
+  }
+
+  const bulletY = doc.y;
+  applyTextStyle(doc, textStyle);
+  doc.text("•", bulletX, bulletY, {
+    width: 10,
     lineBreak: false,
   });
-
-  renderWrappedText(doc, text, {
-    x: textX,
-    width,
-    font: "Regular",
-    fontSize: 10.5,
-    color: colors.text,
-    lineGap: 3,
-    paragraphGap: 4,
+  doc.text(cleanText, textX, bulletY, {
+    width: textWidth,
+    lineGap,
   });
+  doc.y = bulletY + requiredHeight + spacing;
 }
-
 function normalizeSectionText(text: string) {
   return text
     .toLowerCase()
