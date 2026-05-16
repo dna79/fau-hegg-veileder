@@ -374,6 +374,36 @@ function normalizeSectionText(text: string) {
     .trim();
 }
 
+function replaceEnglishSchoolTerms(text: string) {
+  return text
+    .replace(/middle school/gi, "lower secondary school")
+    .replace(/elementary school students/gi, "primary school pupils")
+    .replace(/elementary school/gi, "primary school");
+}
+
+function normalizeGuideForPdf(guide: StructuredGuide, language: LanguageCode): StructuredGuide {
+  if (language !== "en") {
+    return guide;
+  }
+
+  return {
+    ...guide,
+    title: replaceEnglishSchoolTerms(guide.title),
+    intro: replaceEnglishSchoolTerms(guide.intro),
+    stats: guide.stats.map((stat) => ({
+      ...stat,
+      label: replaceEnglishSchoolTerms(stat.label),
+    })),
+    sections: guide.sections.map((section) => ({
+      ...section,
+      title: replaceEnglishSchoolTerms(section.title),
+      summary: replaceEnglishSchoolTerms(section.summary),
+      body: replaceEnglishSchoolTerms(section.body),
+      recommendations: section.recommendations.map(replaceEnglishSchoolTerms),
+    })),
+  };
+}
+
 function chooseSectionText(summary?: string, body?: string) {
   const cleanSummary = summary?.trim() ?? "";
   const cleanBody = body?.trim() ?? "";
@@ -514,9 +544,17 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const requestedLanguage = normalizeLanguage(url.searchParams.get("lang"));
+    if (requestedLanguage === "ar") {
+      return Response.json(
+        { error: "PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen." },
+        { status: 400 },
+      );
+    }
+
     const translations = await loadPublishedTranslations();
     const { language, guide } = selectGuideLanguage(translations, requestedLanguage);
-    const pdfBuffer = await createPdfBuffer(guide, languageLabels[language], language);
+    const pdfGuide = normalizeGuideForPdf(guide, language);
+    const pdfBuffer = await createPdfBuffer(pdfGuide, languageLabels[language], language);
     const body = new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" });
 
     return new Response(body, {

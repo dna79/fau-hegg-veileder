@@ -259,6 +259,11 @@ Returner KUN gyldig JSON med nøyaktig samme struktur som input:
 
 Regler:
 - Oversett all brukerrettet tekst til ${targetLanguageName}.
+- Bevar norsk skolekontekst presist: "ungdomsskole" skal oversettes som "lower secondary school" på engelsk, eller tilsvarende forklaring på andre språk.
+- Bevar norsk skolekontekst presist: "barneskole" skal oversettes som "primary school" på engelsk, eller tilsvarende forklaring på andre språk.
+- Ikke bruk "middle school" for ungdomsskole og ikke overtilpass skoletrinn til andre lands skolesystemer.
+- FAU skal fortsatt hete FAU. Legg bare til en kort forklaring der det er naturlig, for eksempel foreldreutvalg/parent council.
+- Somali-oversettelser er utkast som skal gjennomgås av mennesker; bruk konservativt, tydelig språk og ikke legg til ny tolkning.
 - Ikke endre sectionKey.
 - Ikke endre statistikkverdier som 74 %, 79 %, 88 % eller 90 %.
 - Ikke legg til, fjern eller omorganiser felter.

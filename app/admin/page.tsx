@@ -14,11 +14,11 @@ const workflowSteps = [
 ];
 
 const translationTargets = [
-  { code: "en", label: "English", statusLabel: "English" },
-  { code: "pl", label: "Polish", statusLabel: "Polski" },
-  { code: "uk", label: "Ukrainian", statusLabel: "Українська" },
-  { code: "ar", label: "Arabic", statusLabel: "العربية" },
-  { code: "so", label: "Somali", statusLabel: "Soomaali" },
+  { code: "en", label: "English", statusLabel: "English", needsReview: false },
+  { code: "pl", label: "Polish", statusLabel: "Polski", needsReview: false },
+  { code: "uk", label: "Ukrainian", statusLabel: "Українська", needsReview: false },
+  { code: "ar", label: "Arabic", statusLabel: "العربية", needsReview: false },
+  { code: "so", label: "Somali", statusLabel: "Soomaali", needsReview: true },
 ] as const;
 
 type TranslationTarget = (typeof translationTargets)[number]["code"];
@@ -443,7 +443,11 @@ export default function AdminPage() {
                       : "bg-slate-100 text-slate-700"
                   }`}
                 >
-                  {translatedGuides[target.code] ? "Klar" : "Utkast"}
+                  {translatedGuides[target.code]
+                    ? target.needsReview
+                      ? "Til gjennomgang"
+                      : "Klar"
+                    : "Utkast"}
                 </span>
               </article>
             ))}
@@ -564,6 +568,10 @@ export default function AdminPage() {
               </button>
             ))}
           </div>
+
+          <p className="mt-4 text-sm leading-6 text-slate-700">
+            Somali-oversettelser markeres som til gjennomgang før publisering.
+          </p>
 
           {translationError ? (
             <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700 ring-1 ring-red-100">

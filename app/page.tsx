@@ -70,6 +70,11 @@ export default function Home() {
   const isGuideLoading = guideLoadState === "loading";
 
   async function handleDownloadPdf() {
+    if (selectedLanguage === "ar") {
+      setPdfError("PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen.");
+      return;
+    }
+
     setIsDownloadingPdf(true);
     setPdfError("");
 
@@ -139,7 +144,11 @@ export default function Home() {
                   disabled={isDownloadingPdf}
                   className="rounded-full bg-emerald-800 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
                 >
-                  {isDownloadingPdf ? "Lager PDF..." : "Last ned PDF"}
+                  {selectedLanguage === "ar"
+                    ? "PDF ikke tilgjengelig"
+                    : isDownloadingPdf
+                      ? "Lager PDF..."
+                      : "Last ned PDF"}
                 </button>
               </div>
 
