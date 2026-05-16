@@ -2,118 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
-import type { StructuredGuide } from "@/lib/gemini";
-
-type LanguageCode = "nb" | "en" | "pl" | "uk" | "ar" | "so";
+import {
+  fallbackContent,
+  languageLabels,
+  type GuideTranslations,
+  type LanguageCode,
+} from "@/lib/guide-content";
 
 type GuideApiResponse = {
-  translations?: Partial<Record<LanguageCode, StructuredGuide>>;
-};
-
-const languageLabels: Record<LanguageCode, string> = {
-  nb: "Norsk",
-  en: "English",
-  pl: "Polski",
-  uk: "Українська",
-  ar: "العربية",
-  so: "Soomaali",
-};
-
-const fallbackContent: Record<"nb" | "en", StructuredGuide> = {
-  nb: {
-    title: "Trygg og balansert skjermbruk",
-    intro: "Veileder for foreldre om smarttelefon, sosiale medier og gaming.",
-    stats: [
-      { value: "74 %", label: "ønsker felles retningslinjer" },
-      { value: "79 %", label: "ønsker håndheving av aldersgrenser" },
-      { value: "88 %", label: "ønsker mobilfrie arrangementer" },
-      { value: "90 %", label: "mener skolen bør være mobilfri sone" },
-    ],
-    sections: [
-      {
-        sectionKey: "smarttelefon",
-        title: "Smarttelefon",
-        summary:
-          "Felles forventninger gjør det enklere å vente, begrense bruk og holde mobilen unna når barn trenger ro.",
-        body: "Felles forventninger gjør det enklere å vente, begrense bruk og holde mobilen unna når barn trenger ro.",
-        recommendations: [],
-      },
-      {
-        sectionKey: "sosiale-medier",
-        title: "Sosiale medier",
-        summary:
-          "Aldersgrenser, personvern og respekt på nett bør være tydelige temaer hjemme og i foreldregruppen.",
-        body: "Aldersgrenser, personvern og respekt på nett bør være tydelige temaer hjemme og i foreldregruppen.",
-        recommendations: [],
-      },
-      {
-        sectionKey: "gaming",
-        title: "Gaming",
-        summary:
-          "Avtal tid, innhold og pauser på forhånd, og følg med på språk, pengebruk og hvem barna spiller med.",
-        body: "Avtal tid, innhold og pauser på forhånd, og følg med på språk, pengebruk og hvem barna spiller med.",
-        recommendations: [],
-      },
-      {
-        sectionKey: "generelle-rad",
-        title: "Generelle råd",
-        summary:
-          "Snakk sammen tidlig, stå samlet som foreldre og lag enkle regler som kan følges i hverdagen.",
-        body: "Snakk sammen tidlig, stå samlet som foreldre og lag enkle regler som kan følges i hverdagen.",
-        recommendations: [],
-      },
-    ],
-  },
-  en: {
-    title: "Safe and balanced screen use",
-    intro: "Guide for parents about smartphones, social media and gaming.",
-    stats: [
-      { value: "74 %", label: "want shared guidelines" },
-      { value: "79 %", label: "want age limits to be enforced" },
-      { value: "88 %", label: "want phone-free events" },
-      { value: "90 %", label: "believe school should be a phone-free zone" },
-    ],
-    sections: [
-      {
-        sectionKey: "smarttelefon",
-        title: "Smartphones",
-        summary:
-          "Shared expectations make it easier to wait, limit use and keep phones away when children need calm.",
-        body: "Shared expectations make it easier to wait, limit use and keep phones away when children need calm.",
-        recommendations: [],
-      },
-      {
-        sectionKey: "sosiale-medier",
-        title: "Social media",
-        summary:
-          "Age limits, privacy and respectful behavior online should be clear topics at home and among parents.",
-        body: "Age limits, privacy and respectful behavior online should be clear topics at home and among parents.",
-        recommendations: [],
-      },
-      {
-        sectionKey: "gaming",
-        title: "Gaming",
-        summary:
-          "Agree on time, content and breaks in advance, and pay attention to language, spending and who children play with.",
-        body: "Agree on time, content and breaks in advance, and pay attention to language, spending and who children play with.",
-        recommendations: [],
-      },
-      {
-        sectionKey: "generelle-rad",
-        title: "General advice",
-        summary:
-          "Start conversations early, stay aligned as parents and make simple rules that work in everyday life.",
-        body: "Start conversations early, stay aligned as parents and make simple rules that work in everyday life.",
-        recommendations: [],
-      },
-    ],
-  },
+  translations?: GuideTranslations;
 };
 
 export default function Home() {
   const [language, setLanguage] = useState<LanguageCode>("nb");
-  const [publishedContent, setPublishedContent] =
-    useState<Partial<Record<LanguageCode, StructuredGuide>> | null>(null);
+  const [publishedContent, setPublishedContent] = useState<GuideTranslations | null>(
+    null,
+  );
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -128,7 +34,11 @@ export default function Home() {
 
         const payload = (await response.json()) as GuideApiResponse;
 
-        if (isMounted && payload.translations && Object.keys(payload.translations).length) {
+        if (
+          isMounted &&
+          payload.translations &&
+          Object.keys(payload.translations).length
+        ) {
           setPublishedContent(payload.translations);
         }
       } catch {
@@ -145,8 +55,7 @@ export default function Home() {
     };
   }, []);
 
-  const content: Partial<Record<LanguageCode, StructuredGuide>> =
-    publishedContent ?? fallbackContent;
+  const content: GuideTranslations = publishedContent ?? fallbackContent;
   const availableLanguages = useMemo(
     () =>
       (Object.keys(content) as LanguageCode[]).filter(
@@ -157,29 +66,74 @@ export default function Home() {
   const selectedLanguage = content[language] ? language : "nb";
   const selected = content[selectedLanguage] ?? fallbackContent.nb;
 
+  async function handleDownloadPdf() {
+    setIsDownloadingPdf(true);
+    setPdfError("");
+
+    try {
+      const response = await fetch(`/api/guide/pdf?lang=${selectedLanguage}`);
+
+      if (!response.ok) {
+        throw new Error("PDF generation failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `hegg-skole-fau-veileder-${selectedLanguage}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setPdfError("Kunne ikke lage PDF. Prøv igjen senere.");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-emerald-50 text-slate-950">
       <AppHeader />
 
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-5 py-6 sm:px-8 lg:py-10">
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100 sm:p-8">
-          <div className="mb-6 flex flex-wrap gap-2 rounded-3xl bg-emerald-100 p-1">
-            {availableLanguages.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setLanguage(option)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  language === option
-                    ? "bg-emerald-800 text-white shadow-sm"
-                    : "text-emerald-900 hover:bg-white"
-                }`}
-                aria-pressed={language === option}
-              >
-                {languageLabels[option]}
-              </button>
-            ))}
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2 rounded-3xl bg-emerald-100 p-1">
+              {availableLanguages.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    setLanguage(option);
+                    setPdfError("");
+                  }}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    language === option
+                      ? "bg-emerald-800 text-white shadow-sm"
+                      : "text-emerald-900 hover:bg-white"
+                  }`}
+                  aria-pressed={language === option}
+                >
+                  {languageLabels[option]}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="rounded-full bg-emerald-800 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+            >
+              {isDownloadingPdf ? "Lager PDF..." : "Last ned PDF"}
+            </button>
           </div>
+
+          {pdfError ? (
+            <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700 ring-1 ring-red-100">
+              {pdfError}
+            </div>
+          ) : null}
 
           <div className="max-w-3xl">
             <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-emerald-700">
