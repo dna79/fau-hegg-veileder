@@ -1,3 +1,5 @@
+import { existsSync } from "fs";
+import { join } from "path";
 import PDFDocument from "pdfkit";
 import {
   createSupabaseBrowserClient,
@@ -9,22 +11,75 @@ import {
   normalizeLanguage,
   selectGuideLanguage,
   type GuideTranslations,
+  type LanguageCode,
 } from "@/lib/guide-content";
 import type { StructuredGuide } from "@/lib/gemini";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type PdfDoc = PDFKit.PDFDocument & { __generatedAt?: string; __pageNumber?: number };
+type PdfDoc = PDFKit.PDFDocument & {
+  __generatedAt?: string;
+  __pageNumber?: number;
+  __labels?: PdfLabels;
+};
+
+type FontName = "Regular" | "Bold";
 
 type TextStyle = {
   width: number;
-  font: "Helvetica" | "Helvetica-Bold";
+  font: FontName;
   fontSize: number;
   color: string;
   lineGap?: number;
   paragraphGap?: number;
   x?: number;
+};
+
+type PdfLabels = {
+  statsTitle: string;
+  generated: string;
+  page: string;
+  guideSubtitle: string;
+};
+
+const pdfLabels: Record<LanguageCode, PdfLabels> = {
+  nb: {
+    statsTitle: "Tall fra foreldregruppen",
+    generated: "Generert",
+    page: "Side",
+    guideSubtitle: "Skjermbrukveileder",
+  },
+  en: {
+    statsTitle: "Results from the parent group",
+    generated: "Generated",
+    page: "Page",
+    guideSubtitle: "Screen-use guide",
+  },
+  pl: {
+    statsTitle: "Wyniki ankiety wśród rodziców",
+    generated: "Wygenerowano",
+    page: "Strona",
+    guideSubtitle: "Przewodnik dotyczący korzystania z ekranów",
+  },
+  uk: {
+    statsTitle: "Результати опитування батьків",
+    generated: "Створено",
+    page: "Сторінка",
+    guideSubtitle: "Посібник щодо використання екранів",
+  },
+  ar: {
+    statsTitle: "نتائج مجموعة أولياء الأمور",
+    generated: "تم الإنشاء",
+    page: "صفحة",
+    guideSubtitle: "دليل استخدام الشاشات",
+  },
+  so: {
+    statsTitle: "Natiijooyinka waalidiinta",
+    generated: "La sameeyay",
+    page: "Bogga",
+    guideSubtitle: "Hagaha isticmaalka shaashadda",
+  },
 };
 
 const colors = {
@@ -78,6 +133,26 @@ async function loadPublishedTranslations(): Promise<GuideTranslations> {
   }
 }
 
+function fontPaths() {
+  return {
+    regular: join(process.cwd(), "public", "fonts", "NotoSans-Regular.ttf"),
+    bold: join(process.cwd(), "public", "fonts", "NotoSans-Bold.ttf"),
+  };
+}
+
+function registerFonts(doc: PdfDoc) {
+  const fonts = fontPaths();
+  const missingFonts = Object.values(fonts).filter((fontPath) => !existsSync(fontPath));
+
+  if (missingFonts.length) {
+    console.error("PDF font files missing", { missingFonts });
+    throw new Error("PDF-fontene mangler på serveren.");
+  }
+
+  doc.registerFont("Regular", fonts.regular);
+  doc.registerFont("Bold", fonts.bold);
+}
+
 function contentWidth(doc: PdfDoc) {
   return doc.page.width - doc.page.margins.left - doc.page.margins.right;
 }
@@ -93,6 +168,7 @@ function availableHeight(doc: PdfDoc) {
 function renderFooter(doc: PdfDoc) {
   const generatedAt = doc.__generatedAt;
   const pageNumber = doc.__pageNumber ?? 1;
+  const labels = doc.__labels ?? pdfLabels.nb;
 
   if (!generatedAt) {
     return;
@@ -100,11 +176,11 @@ function renderFooter(doc: PdfDoc) {
 
   const previousY = doc.y;
   doc
-    .font("Helvetica")
+    .font("Regular")
     .fontSize(8)
     .fillColor("#6B7280")
     .text(
-      `Hegg skole FAU - Generert ${generatedAt} - Side ${pageNumber}`,
+      `Hegg skole FAU - ${labels.generated} ${generatedAt} - ${labels.page} ${pageNumber}`,
       doc.page.margins.left,
       doc.page.height - doc.page.margins.bottom - 10,
       {
@@ -116,14 +192,18 @@ function renderFooter(doc: PdfDoc) {
   doc.y = previousY;
 }
 
+function startNewPage(doc: PdfDoc) {
+  renderFooter(doc);
+  doc.addPage();
+  doc.__pageNumber = (doc.__pageNumber ?? 1) + 1;
+}
+
 function addPageIfNeeded(doc: PdfDoc, requiredHeight: number) {
   if (doc.y + requiredHeight <= bottomLimit(doc)) {
     return false;
   }
 
-  renderFooter(doc);
-  doc.addPage();
-  doc.__pageNumber = (doc.__pageNumber ?? 1) + 1;
+  startNewPage(doc);
   return true;
 }
 
@@ -198,7 +278,7 @@ function renderWrappedText(doc: PdfDoc, text: string | undefined, style: TextSty
         remaining = rest;
 
         if (remaining) {
-          doc.addPage();
+          startNewPage(doc);
         }
       }
     }
@@ -212,18 +292,19 @@ function renderWrappedText(doc: PdfDoc, text: string | undefined, style: TextSty
 function renderHeader(doc: PdfDoc) {
   const left = doc.page.margins.left;
   const width = contentWidth(doc);
+  const labels = doc.__labels ?? pdfLabels.nb;
 
   doc
-    .font("Helvetica-Bold")
+    .font("Bold")
     .fontSize(13)
     .fillColor(colors.green)
     .text("Hegg skole FAU", left, doc.y, { width });
 
   doc
-    .font("Helvetica")
+    .font("Regular")
     .fontSize(9.5)
     .fillColor(colors.muted)
-    .text("Skjermbrukveileder", left, doc.y + 2, { width });
+    .text(labels.guideSubtitle, left, doc.y + 2, { width });
 
   doc.y += 12;
   doc
@@ -238,19 +319,20 @@ function renderHeader(doc: PdfDoc) {
 function renderStats(doc: PdfDoc, guide: StructuredGuide) {
   const width = contentWidth(doc);
   const left = doc.page.margins.left;
+  const labels = doc.__labels ?? pdfLabels.nb;
 
   ensureSpace(doc, 88);
   doc
-    .font("Helvetica-Bold")
+    .font("Bold")
     .fontSize(12)
     .fillColor(colors.green)
-    .text("Tall fra foreldregruppen", left, doc.y, { width });
+    .text(labels.statsTitle, left, doc.y, { width });
   doc.y += 8;
 
   guide.stats.forEach((stat) => {
     renderWrappedText(doc, `${stat.value} - ${stat.label}`, {
       width,
-      font: "Helvetica",
+      font: "Regular",
       fontSize: 10.5,
       color: colors.text,
       lineGap: 3,
@@ -268,7 +350,7 @@ function renderBullet(doc: PdfDoc, text: string) {
   const width = contentWidth(doc) - 16;
 
   ensureSpace(doc, 20);
-  doc.font("Helvetica").fontSize(10.5).fillColor(colors.text).text("-", bulletX, doc.y, {
+  doc.font("Regular").fontSize(10.5).fillColor(colors.text).text("-", bulletX, doc.y, {
     width: 8,
     lineBreak: false,
   });
@@ -276,7 +358,7 @@ function renderBullet(doc: PdfDoc, text: string) {
   renderWrappedText(doc, text, {
     x: textX,
     width,
-    font: "Helvetica",
+    font: "Regular",
     fontSize: 10.5,
     color: colors.text,
     lineGap: 3,
@@ -284,11 +366,47 @@ function renderBullet(doc: PdfDoc, text: string) {
   });
 }
 
+function normalizeSectionText(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[\W_]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function chooseSectionText(summary?: string, body?: string) {
+  const cleanSummary = summary?.trim() ?? "";
+  const cleanBody = body?.trim() ?? "";
+
+  if (!cleanBody) {
+    return cleanSummary;
+  }
+
+  if (!cleanSummary) {
+    return cleanBody;
+  }
+
+  const normalizedSummary = normalizeSectionText(cleanSummary);
+  const normalizedBody = normalizeSectionText(cleanBody);
+  const overlaps =
+    normalizedSummary.includes(normalizedBody) ||
+    normalizedBody.includes(normalizedSummary);
+
+  if (overlaps) {
+    return cleanBody.length > cleanSummary.length ? cleanBody : cleanSummary;
+  }
+
+  if (cleanBody.length > cleanSummary.length * 1.35) {
+    return cleanBody;
+  }
+
+  return cleanSummary;
+}
+
 function renderSection(doc: PdfDoc, section: StructuredGuide["sections"][number]) {
   const width = contentWidth(doc);
   const title = section.title?.trim();
-  const summary = section.summary?.trim();
-  const body = section.body?.trim();
+  const sectionText = chooseSectionText(section.summary, section.body);
   const recommendations = section.recommendations?.filter((item) => item.trim()) ?? [];
 
   ensureSpace(doc, 80);
@@ -296,7 +414,7 @@ function renderSection(doc: PdfDoc, section: StructuredGuide["sections"][number]
   if (title) {
     renderWrappedText(doc, title, {
       width,
-      font: "Helvetica-Bold",
+      font: "Bold",
       fontSize: 15,
       color: colors.green,
       lineGap: 3,
@@ -304,21 +422,10 @@ function renderSection(doc: PdfDoc, section: StructuredGuide["sections"][number]
     });
   }
 
-  if (summary) {
-    renderWrappedText(doc, summary, {
+  if (sectionText) {
+    renderWrappedText(doc, sectionText, {
       width,
-      font: "Helvetica",
-      fontSize: 10.8,
-      color: colors.text,
-      lineGap: 4,
-      paragraphGap: 5,
-    });
-  }
-
-  if (body && body !== summary) {
-    renderWrappedText(doc, body, {
-      width,
-      font: "Helvetica",
+      font: "Regular",
       fontSize: 10.8,
       color: colors.text,
       lineGap: 4,
@@ -331,7 +438,7 @@ function renderSection(doc: PdfDoc, section: StructuredGuide["sections"][number]
   doc.y += sectionGap;
 }
 
-function createPdfBuffer(guide: StructuredGuide, languageName: string, language: string) {
+function createPdfBuffer(guide: StructuredGuide, languageName: string, language: LanguageCode) {
   return new Promise<Buffer>((resolve, reject) => {
     const doc: PdfDoc = new PDFDocument({
       size: "A4",
@@ -351,16 +458,18 @@ function createPdfBuffer(guide: StructuredGuide, languageName: string, language:
     }).format(new Date());
     doc.__generatedAt = generatedAt;
     doc.__pageNumber = 1;
+    doc.__labels = pdfLabels[language] ?? pdfLabels.nb;
 
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("error", reject);
     doc.on("end", () => resolve(Buffer.concat(chunks)));
 
+    registerFonts(doc);
     renderHeader(doc);
 
     renderWrappedText(doc, guide.title, {
       width,
-      font: "Helvetica-Bold",
+      font: "Bold",
       fontSize: 22,
       color: colors.green,
       lineGap: 4,
@@ -369,7 +478,7 @@ function createPdfBuffer(guide: StructuredGuide, languageName: string, language:
 
     renderWrappedText(doc, guide.intro, {
       width,
-      font: "Helvetica",
+      font: "Regular",
       fontSize: 11,
       color: colors.text,
       lineGap: 4,
@@ -378,7 +487,7 @@ function createPdfBuffer(guide: StructuredGuide, languageName: string, language:
 
     renderWrappedText(doc, languageName, {
       width,
-      font: "Helvetica",
+      font: "Regular",
       fontSize: 9.5,
       color: colors.muted,
       lineGap: 3,

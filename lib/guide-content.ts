@@ -105,7 +105,14 @@ export const fallbackContent: Record<"nb" | "en", StructuredGuide> = {
 };
 
 export function normalizeLanguage(value: string | null): LanguageCode {
-  if (value === "nb" || value === "en" || value === "pl" || value === "uk" || value === "ar" || value === "so") {
+  if (
+    value === "nb" ||
+    value === "en" ||
+    value === "pl" ||
+    value === "uk" ||
+    value === "ar" ||
+    value === "so"
+  ) {
     return value;
   }
 
