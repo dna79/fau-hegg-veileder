@@ -334,11 +334,10 @@ export default function AdminPage() {
       <div className="mx-auto grid max-w-5xl gap-6 px-5 py-6 sm:px-8 lg:grid-cols-3 lg:py-10">
         <section className="rounded-3xl bg-white p-6 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-100">
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-emerald-950">
-            Status
+            Versjon
           </h2>
           <p className="mt-3 leading-7 text-slate-700">
-            Lagre et utkast mens du arbeider, eller publiser en ny versjon når
-            innholdet er klart.
+            Angi versjonsnummeret som skal brukes når utkastet lagres.
           </p>
           <label className="mt-5 block">
             <span className="text-sm font-semibold text-emerald-900">Versjon</span>

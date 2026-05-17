@@ -16,6 +16,7 @@ type AppHeaderProps = {
 
 export function AppHeader({ actions }: AppHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [logoSrc, setLogoSrc] = useState("/hegg-skole-fau-logo.png");
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,17 +37,18 @@ export function AppHeader({ actions }: AppHeaderProps) {
   return (
     <header className="bg-emerald-800 px-5 py-4 text-white shadow-sm">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <Image
-            src="/hegg-skole-fau-logo.svg"
+            src={logoSrc}
             alt="Hegg skole FAU logo"
-            width={56}
-            height={56}
-            className="h-13 w-13 shrink-0 object-contain sm:h-14 sm:w-14"
+            width={60}
+            height={60}
+            className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14"
             priority
+            onError={() => setLogoSrc("/hegg-skole-fau-logo.svg")}
           />
           <div className="min-w-0">
-            <p className="truncate text-xl font-semibold text-white">
+            <p className="truncate text-lg font-semibold text-white sm:text-xl">
               Hegg skole FAU
             </p>
             <p className="truncate text-sm font-medium text-emerald-100">
@@ -66,7 +68,7 @@ export function AppHeader({ actions }: AppHeaderProps) {
               className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white/15"
             >
               <span className="sr-only">{isMenuOpen ? "Lukk meny" : "Åpne meny"}</span>
-              <span className="flex flex-col gap-1.5">
+              <span className="flex flex-col gap-1.5" aria-hidden="true">
                 <span className="block h-0.5 w-5 rounded-full bg-white" />
                 <span className="block h-0.5 w-5 rounded-full bg-white" />
                 <span className="block h-0.5 w-5 rounded-full bg-white" />

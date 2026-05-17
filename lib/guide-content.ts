@@ -13,6 +13,15 @@ export const languageLabels: Record<LanguageCode, string> = {
   so: "Soomaali",
 };
 
+export const languageDirections: Record<LanguageCode, "ltr" | "rtl"> = {
+  nb: "ltr",
+  en: "ltr",
+  pl: "ltr",
+  uk: "ltr",
+  ar: "rtl",
+  so: "ltr",
+};
+
 export const fallbackContent: Record<"nb" | "en", StructuredGuide> = {
   nb: {
     title: "Trygg og balansert skjermbruk",

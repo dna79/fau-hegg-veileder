@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import {
   fallbackContent,
+  languageDirections,
   languageLabels,
   type GuideTranslations,
   type LanguageCode,
@@ -68,9 +69,11 @@ export default function Home() {
   const selectedLanguage = content?.[language] ? language : "nb";
   const selected = content?.[selectedLanguage] ?? fallbackContent.nb;
   const isGuideLoading = guideLoadState === "loading";
+  const selectedDirection = languageDirections[selectedLanguage];
+  const isArabic = selectedLanguage === "ar";
 
   async function handleDownloadPdf() {
-    if (selectedLanguage === "ar") {
+    if (isArabic) {
       setPdfError("PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen.");
       return;
     }
@@ -141,10 +144,10 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleDownloadPdf}
-                  disabled={isDownloadingPdf}
+                  disabled={isDownloadingPdf || isArabic}
                   className="rounded-full bg-emerald-800 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
                 >
-                  {selectedLanguage === "ar"
+                  {isArabic
                     ? "PDF ikke tilgjengelig"
                     : isDownloadingPdf
                       ? "Lager PDF..."
@@ -152,13 +155,19 @@ export default function Home() {
                 </button>
               </div>
 
+              {isArabic && !pdfError ? (
+                <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800 ring-1 ring-emerald-100">
+                  PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen.
+                </div>
+              ) : null}
+
               {pdfError ? (
                 <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700 ring-1 ring-red-100">
                   {pdfError}
                 </div>
               ) : null}
 
-              <div className="max-w-3xl">
+              <div className={`max-w-3xl ${selectedDirection === "rtl" ? "text-right" : ""}`} dir={selectedDirection}>
                 <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-emerald-700">
                   {languageLabels[selectedLanguage]}
                 </p>
@@ -171,7 +180,7 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <section className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-4 ${selectedDirection === "rtl" ? "text-right" : ""}`} dir={selectedDirection}>
               {selected.stats.map((stat) => (
                 <article
                   key={`${stat.value}-${stat.label}`}
@@ -183,7 +192,7 @@ export default function Home() {
               ))}
             </section>
 
-            <section className="grid gap-4 md:grid-cols-2">
+            <section className={`grid gap-4 md:grid-cols-2 ${selectedDirection === "rtl" ? "text-right" : ""}`} dir={selectedDirection}>
               {selected.sections.map((section) => (
                 <article
                   key={section.sectionKey}

@@ -320,6 +320,24 @@ function renderStats(doc: PdfDoc, guide: StructuredGuide) {
   const width = contentWidth(doc);
   const left = doc.page.margins.left;
   const labels = doc.__labels ?? pdfLabels.nb;
+  const gap = 22;
+  const columnWidth = (width - gap) / 2;
+  const valueWidth = 44;
+  const rowGap = 9;
+  const valueStyle: TextStyle = {
+    width: valueWidth,
+    font: "Bold",
+    fontSize: 10.8,
+    color: colors.green,
+    lineGap: 3,
+  };
+  const labelStyle: TextStyle = {
+    width: columnWidth - valueWidth,
+    font: "Regular",
+    fontSize: 10.2,
+    color: colors.text,
+    lineGap: 3,
+  };
 
   ensureSpace(doc, 88);
   doc
@@ -327,22 +345,45 @@ function renderStats(doc: PdfDoc, guide: StructuredGuide) {
     .fontSize(12)
     .fillColor(colors.green)
     .text(labels.statsTitle, left, doc.y, { width });
-  doc.y += 8;
-
-  guide.stats.forEach((stat) => {
-    renderWrappedText(doc, `${stat.value} - ${stat.label}`, {
-      width,
-      font: "Regular",
-      fontSize: 10.5,
-      color: colors.text,
-      lineGap: 3,
-      paragraphGap: 3,
-    });
-  });
-
   doc.y += 10;
-}
 
+  for (let index = 0; index < guide.stats.length; index += 2) {
+    const rowStats = guide.stats.slice(index, index + 2);
+    const rowHeight = Math.max(
+      ...rowStats.map((stat) =>
+        Math.max(
+          textHeight(doc, stat.value, valueStyle),
+          textHeight(doc, stat.label, labelStyle),
+        ),
+      ),
+    );
+
+    ensureSpace(doc, rowHeight + rowGap);
+
+    if (rowHeight > availableHeight(doc)) {
+      startNewPage(doc);
+    }
+
+    const rowY = doc.y;
+    rowStats.forEach((stat, columnIndex) => {
+      const columnX = left + columnIndex * (columnWidth + gap);
+      applyTextStyle(doc, valueStyle);
+      doc.text(stat.value, columnX, rowY, {
+        width: valueWidth,
+        lineGap: valueStyle.lineGap,
+      });
+      applyTextStyle(doc, labelStyle);
+      doc.text(stat.label, columnX + valueWidth, rowY, {
+        width: labelStyle.width,
+        lineGap: labelStyle.lineGap,
+      });
+    });
+
+    doc.y = rowY + rowHeight + rowGap;
+  }
+
+  doc.y += 8;
+}
 function renderBullet(doc: PdfDoc, text: string) {
   const left = doc.page.margins.left;
   const bulletX = left + 2;
@@ -563,9 +604,10 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const requestedLanguage = normalizeLanguage(url.searchParams.get("lang"));
     if (requestedLanguage === "ar") {
+      // Arabic requires RTL layout and glyph shaping. PDFKit does not handle this reliably in the current MVP.
       return Response.json(
         { error: "PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen." },
-        { status: 400 },
+        { status: 501 },
       );
     }
 
