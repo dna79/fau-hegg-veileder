@@ -18,7 +18,7 @@ export async function GET() {
   try {
     const supabase = createSupabaseBrowserClient();
     const { data: document, error: documentError } = await supabase
-      .from("documents")
+      .from("fau_documents")
       .select("*")
       .eq("status", "published")
       .order("published_at", { ascending: false, nullsFirst: false })
@@ -41,12 +41,12 @@ export async function GET() {
       { data: languages, error: languagesError },
     ] = await Promise.all([
       supabase
-        .from("guide_translations")
+        .from("fau_guide_translations")
         .select("language_code, content")
         .eq("document_id", document.id)
         .eq("status", "published"),
       supabase
-        .from("languages")
+        .from("fau_languages")
         .select("language_code, name, native_name, enabled, sort_order")
         .eq("enabled", true)
         .order("sort_order", { ascending: true }),

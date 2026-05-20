@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const supabase = createSupabaseServerClient();
 
     const { error: archiveError } = await supabase
-      .from("documents")
+      .from("fau_documents")
       .update({ status: "archived" })
       .eq("status", "published");
 
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     const { data: document, error: publishError } = await supabase
-      .from("documents")
+      .from("fau_documents")
       .update({
         status: "published",
         published_at: new Date().toISOString(),
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     }
 
     const { error: translationsError } = await supabase
-      .from("guide_translations")
+      .from("fau_guide_translations")
       .update({ status: "published" })
       .eq("document_id", body.documentId);
 

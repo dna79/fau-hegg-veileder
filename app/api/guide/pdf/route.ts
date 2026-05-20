@@ -100,7 +100,7 @@ async function loadPublishedTranslations(): Promise<GuideTranslations> {
   try {
     const supabase = createSupabaseBrowserClient();
     const { data: document, error: documentError } = await supabase
-      .from("documents")
+      .from("fau_documents")
       .select("id")
       .eq("status", "published")
       .order("published_at", { ascending: false, nullsFirst: false })
@@ -112,7 +112,7 @@ async function loadPublishedTranslations(): Promise<GuideTranslations> {
     }
 
     const { data: translations, error: translationsError } = await supabase
-      .from("guide_translations")
+      .from("fau_guide_translations")
       .select("language_code, content")
       .eq("document_id", document.id)
       .eq("status", "published");
