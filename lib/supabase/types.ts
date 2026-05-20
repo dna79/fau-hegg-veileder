@@ -9,7 +9,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      documents: {
+      fau_documents: {
         Row: {
           id: string;
           title: string;
@@ -38,7 +38,7 @@ export type Database = {
         };
         Relationships: [];
       };
-      guide_translations: {
+      fau_guide_translations: {
         Row: {
           id: string;
           document_id: string;
@@ -67,20 +67,20 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "guide_translations_document_id_fkey";
+            foreignKeyName: "fau_guide_translations_document_id_fkey";
             columns: ["document_id"];
-            referencedRelation: "documents";
+            referencedRelation: "fau_documents";
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "guide_translations_language_code_fkey";
+            foreignKeyName: "fau_guide_translations_language_code_fkey";
             columns: ["language_code"];
-            referencedRelation: "languages";
+            referencedRelation: "fau_languages";
             referencedColumns: ["language_code"];
           },
         ];
       };
-      languages: {
+      fau_languages: {
         Row: {
           language_code: string;
           name: string;

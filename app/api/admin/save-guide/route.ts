@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     const supabase = createSupabaseServerClient();
     const { data: document, error: documentError } = await supabase
-      .from("documents")
+      .from("fau_documents")
       .insert({
         title: norwegianGuide.title,
         version,
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     );
 
     const { error: translationsError } = await supabase
-      .from("guide_translations")
+      .from("fau_guide_translations")
       .insert(translationRows);
 
     if (translationsError) {
