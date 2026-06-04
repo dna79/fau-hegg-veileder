@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import type { StructuredGuideSection } from "@/lib/gemini";
 import {
   fallbackContent,
   languageDirections,
@@ -16,10 +17,32 @@ type GuideApiResponse = {
 
 type GuideLoadState = "loading" | "published" | "fallback";
 
+function sectionParagraphs(section: StructuredGuideSection) {
+  if (section.paragraphs?.length) {
+    return section.paragraphs;
+  }
+
+  if (section.body?.trim()) {
+    return section.body
+      .split(/\n{2,}/g)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+  }
+
+  return section.summary?.trim() ? [section.summary] : [];
+}
+
+function sectionBullets(section: StructuredGuideSection) {
+  return section.bullets?.length
+    ? section.bullets
+    : (section.recommendations ?? []);
+}
+
 export default function Home() {
   const [language, setLanguage] = useState<LanguageCode>("nb");
   const [content, setContent] = useState<GuideTranslations | null>(null);
-  const [guideLoadState, setGuideLoadState] = useState<GuideLoadState>("loading");
+  const [guideLoadState, setGuideLoadState] =
+    useState<GuideLoadState>("loading");
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState("");
 
@@ -36,7 +59,10 @@ export default function Home() {
 
         const payload = (await response.json()) as GuideApiResponse;
 
-        if (!payload.translations || !Object.keys(payload.translations).length) {
+        if (
+          !payload.translations ||
+          !Object.keys(payload.translations).length
+        ) {
           throw new Error("Guide response is empty");
         }
 
@@ -74,7 +100,9 @@ export default function Home() {
 
   async function handleDownloadPdf() {
     if (isArabic) {
-      setPdfError("PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen.");
+      setPdfError(
+        "PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen.",
+      );
       return;
     }
 
@@ -167,7 +195,10 @@ export default function Home() {
                 </div>
               ) : null}
 
-              <div className={`max-w-3xl ${selectedDirection === "rtl" ? "text-right" : ""}`} dir={selectedDirection}>
+              <div
+                className={`max-w-3xl ${selectedDirection === "rtl" ? "text-right" : ""}`}
+                dir={selectedDirection}
+              >
                 <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-emerald-700">
                   {languageLabels[selectedLanguage]}
                 </p>
@@ -180,19 +211,29 @@ export default function Home() {
               </div>
             </section>
 
-            <section className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-4 ${selectedDirection === "rtl" ? "text-right" : ""}`} dir={selectedDirection}>
+            <section
+              className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-4 ${selectedDirection === "rtl" ? "text-right" : ""}`}
+              dir={selectedDirection}
+            >
               {selected.stats.map((stat) => (
                 <article
                   key={`${stat.value}-${stat.label}`}
                   className="rounded-2xl bg-white p-5 shadow-sm shadow-emerald-900/10 ring-1 ring-emerald-100"
                 >
-                  <p className="text-3xl font-bold text-emerald-800">{stat.value}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">{stat.label}</p>
+                  <p className="text-3xl font-bold text-emerald-800">
+                    {stat.value}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {stat.label}
+                  </p>
                 </article>
               ))}
             </section>
 
-            <section className={`grid gap-4 md:grid-cols-2 ${selectedDirection === "rtl" ? "text-right" : ""}`} dir={selectedDirection}>
+            <section
+              className={`grid gap-4 md:grid-cols-2 ${selectedDirection === "rtl" ? "text-right" : ""}`}
+              dir={selectedDirection}
+            >
               {selected.sections.map((section) => (
                 <article
                   key={section.sectionKey}
@@ -201,13 +242,19 @@ export default function Home() {
                   <h3 className="text-xl font-bold text-emerald-950">
                     {section.title}
                   </h3>
-                  <p className="mt-3 leading-7 text-slate-700">
-                    {section.summary || section.body}
-                  </p>
-                  {section.recommendations.length ? (
-                    <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-700">
-                      {section.recommendations.map((recommendation) => (
-                        <li key={recommendation}>- {recommendation}</li>
+                  <div className="mt-3 space-y-3 leading-7 text-slate-700">
+                    {sectionParagraphs(section).map((paragraph, index) => (
+                      <p key={`${section.sectionKey}-paragraph-${index}`}>
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                  {sectionBullets(section).length ? (
+                    <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+                      {sectionBullets(section).map((bullet, index) => (
+                        <li key={`${section.sectionKey}-bullet-${index}`}>
+                          {bullet}
+                        </li>
                       ))}
                     </ul>
                   ) : null}

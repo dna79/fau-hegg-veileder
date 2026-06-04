@@ -1,1 +1,1 @@
-export { createSupabaseServerClient, supabaseAdmin } from "./admin";
+export { createSupabaseServerClient } from "./admin";

@@ -16,7 +16,12 @@ const workflowSteps = [
 const translationTargets = [
   { code: "en", label: "English", statusLabel: "English", needsReview: false },
   { code: "pl", label: "Polish", statusLabel: "Polski", needsReview: false },
-  { code: "uk", label: "Ukrainian", statusLabel: "Українська", needsReview: false },
+  {
+    code: "uk",
+    label: "Ukrainian",
+    statusLabel: "Українська",
+    needsReview: false,
+  },
   { code: "ar", label: "Arabic", statusLabel: "العربية", needsReview: false },
   { code: "so", label: "Somali", statusLabel: "Soomaali", needsReview: true },
 ] as const;
@@ -46,10 +51,94 @@ type PublishResponse = {
   error?: string;
 };
 
+type TranslateResponse = {
+  guide?: StructuredGuide;
+  warning?: string;
+  error?: string;
+};
+
+function guideCounts(guide: StructuredGuide) {
+  return guide.sections.reduce(
+    (counts, section) => ({
+      sections: counts.sections,
+      paragraphs: counts.paragraphs + section.paragraphs.length,
+      bullets: counts.bullets + section.bullets.length,
+    }),
+    { sections: guide.sections.length, paragraphs: 0, bullets: 0 },
+  );
+}
+
+function countLabel(guide: StructuredGuide) {
+  const counts = guideCounts(guide);
+
+  return `Seksjoner: ${counts.sections} / Avsnitt: ${counts.paragraphs} / Punkter: ${counts.bullets}`;
+}
+
+function GuidePreview({ guide }: { guide: StructuredGuide }) {
+  return (
+    <div className="max-h-[36rem] space-y-5 overflow-auto pr-2 text-sm leading-6 text-slate-800">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+          Fulltekst strukturert for web/PDF
+        </p>
+        <h3 className="mt-2 text-xl font-bold text-emerald-950">
+          {guide.title}
+        </h3>
+        {guide.intro ? (
+          <p className="mt-2 text-slate-700">{guide.intro}</p>
+        ) : null}
+      </div>
+
+      {guide.stats.length ? (
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {guide.stats.map((stat) => (
+            <div
+              key={`${stat.value}-${stat.label}`}
+              className="rounded-xl bg-white/70 p-3 ring-1 ring-emerald-100"
+            >
+              <p className="font-bold text-emerald-900">{stat.value}</p>
+              <p className="text-xs text-slate-700">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {guide.sections.map((section) => (
+        <article
+          key={section.sectionKey}
+          className="rounded-2xl bg-white/70 p-4 ring-1 ring-emerald-100"
+        >
+          <p className="text-xs font-semibold text-emerald-700">
+            {section.sectionKey}
+          </p>
+          <h4 className="mt-1 text-lg font-bold text-emerald-950">
+            {section.title}
+          </h4>
+          <div className="mt-3 space-y-3">
+            {section.paragraphs.map((paragraph, index) => (
+              <p key={`${section.sectionKey}-paragraph-${index}`}>
+                {paragraph}
+              </p>
+            ))}
+          </div>
+          {section.bullets.length ? (
+            <ul className="mt-3 list-disc space-y-2 pl-5">
+              {section.bullets.map((bullet, index) => (
+                <li key={`${section.sectionKey}-bullet-${index}`}>{bullet}</li>
+              ))}
+            </ul>
+          ) : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedPdf, setExtractedPdf] = useState<ExtractedPdf | null>(null);
-  const [structuredGuide, setStructuredGuide] = useState<StructuredGuide | null>(null);
+  const [structuredGuide, setStructuredGuide] =
+    useState<StructuredGuide | null>(null);
   const [translatedGuides, setTranslatedGuides] = useState<
     Partial<Record<TranslationTarget, StructuredGuide>>
   >({});
@@ -64,6 +153,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [structureError, setStructureError] = useState("");
   const [translationError, setTranslationError] = useState("");
+  const [translationWarning, setTranslationWarning] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +162,7 @@ export default function AdminPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const translatedGuide = translatedLanguage
-    ? translatedGuides[translatedLanguage] ?? null
+    ? (translatedGuides[translatedLanguage] ?? null)
     : null;
 
   function resetDerivedState() {
@@ -82,6 +172,7 @@ export default function AdminPage() {
     setTranslatedLanguage(null);
     setStructureError("");
     setTranslationError("");
+    setTranslationWarning("");
     setSaveError("");
     setSaveMessage("");
     setSavedDraft(null);
@@ -142,6 +233,7 @@ export default function AdminPage() {
     setIsStructuring(true);
     setStructureError("");
     setTranslationError("");
+    setTranslationWarning("");
     setSaveError("");
     setSaveMessage("");
     setSavedDraft(null);
@@ -186,6 +278,7 @@ export default function AdminPage() {
 
     setIsTranslating(true);
     setTranslationError("");
+    setTranslationWarning("");
     setSaveError("");
     setSaveMessage("");
     setSavedDraft(null);
@@ -202,16 +295,28 @@ export default function AdminPage() {
           targetLanguage,
         }),
       });
-      const payload = await response.json();
+      const payload = (await response.json()) as
+        | TranslateResponse
+        | StructuredGuide;
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Kunne ikke oversette innholdet.");
+        throw new Error(
+          "error" in payload && payload.error
+            ? payload.error
+            : "Kunne ikke oversette innholdet.",
+        );
       }
+
+      const translatedPayload =
+        "guide" in payload && payload.guide ? payload.guide : payload;
 
       setTranslatedGuides((current) => ({
         ...current,
-        [targetLanguage]: payload,
+        [targetLanguage]: translatedPayload,
       }));
+      setTranslationWarning(
+        "warning" in payload && payload.warning ? payload.warning : "",
+      );
     } catch (guideError) {
       setTranslationError(
         guideError instanceof Error
@@ -302,9 +407,13 @@ export default function AdminPage() {
       }
 
       setSavedDraft((current) =>
-        current ? { ...current, status: payload.document?.status ?? "published" } : current,
+        current
+          ? { ...current, status: payload.document?.status ?? "published" }
+          : current,
       );
-      setSaveMessage(`Versjon ${payload.document?.version ?? version} er publisert.`);
+      setSaveMessage(
+        `Versjon ${payload.document?.version ?? version} er publisert.`,
+      );
     } catch (publishErrorValue) {
       setSaveError(
         publishErrorValue instanceof Error
@@ -340,7 +449,9 @@ export default function AdminPage() {
             Angi versjonsnummeret som skal brukes når utkastet lagres.
           </p>
           <label className="mt-5 block">
-            <span className="text-sm font-semibold text-emerald-900">Versjon</span>
+            <span className="text-sm font-semibold text-emerald-900">
+              Versjon
+            </span>
             <input
               type="text"
               value={version}
@@ -404,7 +515,8 @@ export default function AdminPage() {
                       ? `${extractedPdf.pageCount} sider behandlet`
                       : index === 2 && structuredGuide
                         ? `${structuredGuide.sections.length} seksjoner klare`
-                        : index === 3 && Object.keys(translatedGuides).length > 0
+                        : index === 3 &&
+                            Object.keys(translatedGuides).length > 0
                           ? `${Object.keys(translatedGuides).length} oversettelser klare`
                           : index === 4 && savedDraft
                             ? savedDraft.status === "published"
@@ -434,7 +546,9 @@ export default function AdminPage() {
                 key={target.code}
                 className="flex items-center justify-between gap-3 rounded-2xl bg-emerald-50 p-4"
               >
-                <p className="font-semibold text-emerald-950">{target.statusLabel}</p>
+                <p className="font-semibold text-emerald-950">
+                  {target.statusLabel}
+                </p>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-bold ${
                     translatedGuides[target.code]
@@ -513,7 +627,7 @@ export default function AdminPage() {
             </div>
             {structuredGuide ? (
               <div className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800">
-                {structuredGuide.sections.length} seksjoner
+                {countLabel(structuredGuide)}
               </div>
             ) : null}
           </div>
@@ -521,12 +635,10 @@ export default function AdminPage() {
           <div className="mt-5 min-h-48 rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
             {isStructuring ? (
               <p className="text-sm font-medium text-slate-700">
-                Sender norsk tekst til Gemini og bygger struktur...
+                Sender norsk tekst til Gemini og bygger fulltekststruktur...
               </p>
             ) : structuredGuide ? (
-              <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words text-sm leading-6 text-slate-800">
-                {JSON.stringify(structuredGuide, null, 2)}
-              </pre>
+              <GuidePreview guide={structuredGuide} />
             ) : (
               <p className="text-sm font-medium text-slate-700">
                 Når PDF-teksten er hentet ut kan du strukturere innholdet her.
@@ -545,8 +657,9 @@ export default function AdminPage() {
             {translatedLanguage ? (
               <div className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800">
                 {
-                  translationTargets.find((target) => target.code === translatedLanguage)
-                    ?.label
+                  translationTargets.find(
+                    (target) => target.code === translatedLanguage,
+                  )?.label
                 }
               </div>
             ) : null}
@@ -569,12 +682,18 @@ export default function AdminPage() {
           </div>
 
           <p className="mt-4 text-sm leading-6 text-slate-700">
+            Hele den strukturerte fullteksten sendes til Gemini for oversetting.
             Somali-oversettelser markeres som til gjennomgang før publisering.
           </p>
 
           {translationError ? (
             <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700 ring-1 ring-red-100">
               {translationError}
+            </div>
+          ) : null}
+          {translationWarning ? (
+            <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm font-medium text-amber-800 ring-1 ring-amber-100">
+              {translationWarning}
             </div>
           ) : null}
         </section>
@@ -588,7 +707,7 @@ export default function AdminPage() {
             </div>
             {translatedGuide ? (
               <div className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800">
-                {translatedGuide.sections.length} seksjoner
+                {countLabel(translatedGuide)}
               </div>
             ) : null}
           </div>
@@ -596,16 +715,15 @@ export default function AdminPage() {
           <div className="mt-5 min-h-48 rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
             {isTranslating ? (
               <p className="text-sm font-medium text-slate-700">
-                Sender strukturert innhold til Gemini for oversetting...
+                Sender strukturert fulltekstinnhold til Gemini for
+                oversetting...
               </p>
             ) : translatedGuide ? (
-              <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words text-sm leading-6 text-slate-800">
-                {JSON.stringify(translatedGuide, null, 2)}
-              </pre>
+              <GuidePreview guide={translatedGuide} />
             ) : (
               <p className="text-sm font-medium text-slate-700">
-                Når innholdet er strukturert kan du oversette det til et valgt språk
-                her.
+                Når innholdet er strukturert kan du oversette det til et valgt
+                språk her.
               </p>
             )}
           </div>
@@ -616,8 +734,8 @@ export default function AdminPage() {
             Lagring og publisering
           </h2>
           <p className="mt-3 leading-7 text-slate-700">
-            Lagring bruker Supabase på serveren. Publisering blir tilgjengelig når
-            et utkast er lagret.
+            Lagring bruker Supabase på serveren. Publisering blir tilgjengelig
+            når et utkast er lagret.
           </p>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -631,7 +749,9 @@ export default function AdminPage() {
             </button>
             <button
               type="button"
-              disabled={!savedDraft || savedDraft.status === "published" || isSaving}
+              disabled={
+                !savedDraft || savedDraft.status === "published" || isSaving
+              }
               onClick={handlePublishGuide}
               className="rounded-full bg-emerald-800 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
             >
