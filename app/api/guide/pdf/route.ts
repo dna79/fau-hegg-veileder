@@ -142,7 +142,9 @@ function fontPaths() {
 
 function registerFonts(doc: PdfDoc) {
   const fonts = fontPaths();
-  const missingFonts = Object.values(fonts).filter((fontPath) => !existsSync(fontPath));
+  const missingFonts = Object.values(fonts).filter(
+    (fontPath) => !existsSync(fontPath),
+  );
 
   if (missingFonts.length) {
     console.error("PDF font files missing", { missingFonts });
@@ -223,7 +225,12 @@ function textHeight(doc: PdfDoc, text: string, style: TextStyle) {
   });
 }
 
-function takeFittingText(doc: PdfDoc, text: string, style: TextStyle, maxHeight: number) {
+function takeFittingText(
+  doc: PdfDoc,
+  text: string,
+  style: TextStyle,
+  maxHeight: number,
+) {
   const words = text.trim().split(/\s+/).filter(Boolean);
   let chunk = "";
   let consumed = 0;
@@ -246,7 +253,11 @@ function takeFittingText(doc: PdfDoc, text: string, style: TextStyle, maxHeight:
   };
 }
 
-function renderWrappedText(doc: PdfDoc, text: string | undefined, style: TextStyle) {
+function renderWrappedText(
+  doc: PdfDoc,
+  text: string | undefined,
+  style: TextStyle,
+) {
   const paragraphs = (text ?? "")
     .split(/\n+/)
     .map((paragraph) => paragraph.trim())
@@ -270,7 +281,12 @@ function renderWrappedText(doc: PdfDoc, text: string | undefined, style: TextSty
         });
         remaining = "";
       } else {
-        const { chunk, rest } = takeFittingText(doc, remaining, style, maxHeight);
+        const { chunk, rest } = takeFittingText(
+          doc,
+          remaining,
+          style,
+          maxHeight,
+        );
         doc.text(chunk, x, doc.y, {
           width: style.width,
           lineGap: style.lineGap ?? 0,
@@ -405,7 +421,10 @@ function renderBullet(doc: PdfDoc, text: string) {
     color: colors.text,
     lineGap,
   };
-  const requiredHeight = Math.max(fontSize + lineGap, textHeight(doc, cleanText, textStyle));
+  const requiredHeight = Math.max(
+    fontSize + lineGap,
+    textHeight(doc, cleanText, textStyle),
+  );
 
   ensureSpace(doc, requiredHeight + spacing);
 
@@ -425,13 +444,6 @@ function renderBullet(doc: PdfDoc, text: string) {
   });
   doc.y = bulletY + requiredHeight + spacing;
 }
-function normalizeSectionText(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[\W_]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function replaceEnglishSchoolTerms(text: string) {
   return text
@@ -440,7 +452,31 @@ function replaceEnglishSchoolTerms(text: string) {
     .replace(/elementary school/gi, "primary school");
 }
 
-function normalizeGuideForPdf(guide: StructuredGuide, language: LanguageCode): StructuredGuide {
+function sectionParagraphs(section: StructuredGuide["sections"][number]) {
+  if (section.paragraphs?.length) {
+    return section.paragraphs;
+  }
+
+  if (section.body?.trim()) {
+    return section.body
+      .split(/\n{2,}/g)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+  }
+
+  return section.summary?.trim() ? [section.summary] : [];
+}
+
+function sectionBullets(section: StructuredGuide["sections"][number]) {
+  return section.bullets?.length
+    ? section.bullets
+    : (section.recommendations ?? []);
+}
+
+function normalizeGuideForPdf(
+  guide: StructuredGuide,
+  language: LanguageCode,
+): StructuredGuide {
   if (language !== "en") {
     return guide;
   }
@@ -456,47 +492,25 @@ function normalizeGuideForPdf(guide: StructuredGuide, language: LanguageCode): S
     sections: guide.sections.map((section) => ({
       ...section,
       title: replaceEnglishSchoolTerms(section.title),
-      summary: replaceEnglishSchoolTerms(section.summary),
-      body: replaceEnglishSchoolTerms(section.body),
-      recommendations: section.recommendations.map(replaceEnglishSchoolTerms),
+      paragraphs: sectionParagraphs(section).map(replaceEnglishSchoolTerms),
+      bullets: sectionBullets(section).map(replaceEnglishSchoolTerms),
+      summary: section.summary
+        ? replaceEnglishSchoolTerms(section.summary)
+        : undefined,
+      body: section.body ? replaceEnglishSchoolTerms(section.body) : undefined,
+      recommendations: section.recommendations?.map(replaceEnglishSchoolTerms),
     })),
   };
 }
 
-function chooseSectionText(summary?: string, body?: string) {
-  const cleanSummary = summary?.trim() ?? "";
-  const cleanBody = body?.trim() ?? "";
-
-  if (!cleanBody) {
-    return cleanSummary;
-  }
-
-  if (!cleanSummary) {
-    return cleanBody;
-  }
-
-  const normalizedSummary = normalizeSectionText(cleanSummary);
-  const normalizedBody = normalizeSectionText(cleanBody);
-  const overlaps =
-    normalizedSummary.includes(normalizedBody) ||
-    normalizedBody.includes(normalizedSummary);
-
-  if (overlaps) {
-    return cleanBody.length > cleanSummary.length ? cleanBody : cleanSummary;
-  }
-
-  if (cleanBody.length > cleanSummary.length * 1.35) {
-    return cleanBody;
-  }
-
-  return cleanSummary;
-}
-
-function renderSection(doc: PdfDoc, section: StructuredGuide["sections"][number]) {
+function renderSection(
+  doc: PdfDoc,
+  section: StructuredGuide["sections"][number],
+) {
   const width = contentWidth(doc);
   const title = section.title?.trim();
-  const sectionText = chooseSectionText(section.summary, section.body);
-  const recommendations = section.recommendations?.filter((item) => item.trim()) ?? [];
+  const paragraphs = sectionParagraphs(section).filter((item) => item.trim());
+  const recommendations = sectionBullets(section).filter((item) => item.trim());
 
   ensureSpace(doc, 80);
 
@@ -511,8 +525,8 @@ function renderSection(doc: PdfDoc, section: StructuredGuide["sections"][number]
     });
   }
 
-  if (sectionText) {
-    renderWrappedText(doc, sectionText, {
+  paragraphs.forEach((paragraph) => {
+    renderWrappedText(doc, paragraph, {
       width,
       font: "Regular",
       fontSize: 10.8,
@@ -520,14 +534,20 @@ function renderSection(doc: PdfDoc, section: StructuredGuide["sections"][number]
       lineGap: 4,
       paragraphGap: 5,
     });
-  }
+  });
 
-  recommendations.forEach((recommendation) => renderBullet(doc, recommendation));
+  recommendations.forEach((recommendation) =>
+    renderBullet(doc, recommendation),
+  );
 
   doc.y += sectionGap;
 }
 
-function createPdfBuffer(guide: StructuredGuide, languageName: string, language: LanguageCode) {
+function createPdfBuffer(
+  guide: StructuredGuide,
+  languageName: string,
+  language: LanguageCode,
+) {
   return new Promise<Buffer>((resolve, reject) => {
     const doc: PdfDoc = new PDFDocument({
       size: "A4",
@@ -606,16 +626,28 @@ export async function GET(request: Request) {
     if (requestedLanguage === "ar") {
       // Arabic requires RTL layout and glyph shaping. PDFKit does not handle this reliably in the current MVP.
       return Response.json(
-        { error: "PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen." },
+        {
+          error:
+            "PDF for arabisk er ikke tilgjengelig ennå. Bruk webversjonen.",
+        },
         { status: 501 },
       );
     }
 
     const translations = await loadPublishedTranslations();
-    const { language, guide } = selectGuideLanguage(translations, requestedLanguage);
+    const { language, guide } = selectGuideLanguage(
+      translations,
+      requestedLanguage,
+    );
     const pdfGuide = normalizeGuideForPdf(guide, language);
-    const pdfBuffer = await createPdfBuffer(pdfGuide, languageLabels[language], language);
-    const body = new Blob([new Uint8Array(pdfBuffer)], { type: "application/pdf" });
+    const pdfBuffer = await createPdfBuffer(
+      pdfGuide,
+      languageLabels[language],
+      language,
+    );
+    const body = new Blob([new Uint8Array(pdfBuffer)], {
+      type: "application/pdf",
+    });
 
     return new Response(body, {
       headers: {

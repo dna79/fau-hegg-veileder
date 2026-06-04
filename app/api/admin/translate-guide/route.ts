@@ -50,7 +50,10 @@ export async function POST(request: Request) {
     const message =
       error instanceof Error && error.message.includes("GEMINI_API_KEY")
         ? "Gemini API-nøkkel mangler. Legg til GEMINI_API_KEY i miljøvariablene."
-        : "Kunne ikke oversette innholdet akkurat nå. Sjekk strukturen og prøv igjen.";
+        : error instanceof Error &&
+            error.message === "Oversettelsen ser ut til å mangle innhold. Prøv igjen."
+          ? error.message
+          : "Kunne ikke oversette innholdet akkurat nå. Sjekk strukturen og prøv igjen.";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }

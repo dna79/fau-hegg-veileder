@@ -26,6 +26,7 @@ export const fallbackContent: Record<"nb" | "en", StructuredGuide> = {
   nb: {
     title: "Trygg og balansert skjermbruk",
     intro: "Veileder for foreldre om smarttelefon, sosiale medier og gaming.",
+    languageCode: "nb",
     stats: [
       { value: "74 %", label: "ønsker felles retningslinjer" },
       { value: "79 %", label: "ønsker håndheving av aldersgrenser" },
@@ -36,40 +37,41 @@ export const fallbackContent: Record<"nb" | "en", StructuredGuide> = {
       {
         sectionKey: "smarttelefon",
         title: "Smarttelefon",
-        summary:
+        paragraphs: [
           "Felles forventninger gjør det enklere å vente, begrense bruk og holde mobilen unna når barn trenger ro.",
-        body: "Felles forventninger gjør det enklere å vente, begrense bruk og holde mobilen unna når barn trenger ro.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
       {
         sectionKey: "sosiale-medier",
         title: "Sosiale medier",
-        summary:
+        paragraphs: [
           "Aldersgrenser, personvern og respekt på nett bør være tydelige temaer hjemme og i foreldregruppen.",
-        body: "Aldersgrenser, personvern og respekt på nett bør være tydelige temaer hjemme og i foreldregruppen.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
       {
         sectionKey: "gaming",
         title: "Gaming",
-        summary:
+        paragraphs: [
           "Avtal tid, innhold og pauser på forhånd, og følg med på språk, pengebruk og hvem barna spiller med.",
-        body: "Avtal tid, innhold og pauser på forhånd, og følg med på språk, pengebruk og hvem barna spiller med.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
       {
         sectionKey: "generelle-rad",
         title: "Generelle råd",
-        summary:
+        paragraphs: [
           "Snakk sammen tidlig, stå samlet som foreldre og lag enkle regler som kan følges i hverdagen.",
-        body: "Snakk sammen tidlig, stå samlet som foreldre og lag enkle regler som kan følges i hverdagen.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
     ],
   },
   en: {
     title: "Safe and balanced screen use",
     intro: "Guide for parents about smartphones, social media and gaming.",
+    languageCode: "en",
     stats: [
       { value: "74 %", label: "want shared guidelines" },
       { value: "79 %", label: "want age limits to be enforced" },
@@ -80,34 +82,34 @@ export const fallbackContent: Record<"nb" | "en", StructuredGuide> = {
       {
         sectionKey: "smarttelefon",
         title: "Smartphones",
-        summary:
+        paragraphs: [
           "Shared expectations make it easier to wait, limit use and keep phones away when children need calm.",
-        body: "Shared expectations make it easier to wait, limit use and keep phones away when children need calm.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
       {
         sectionKey: "sosiale-medier",
         title: "Social media",
-        summary:
+        paragraphs: [
           "Age limits, privacy and respectful behavior online should be clear topics at home and among parents.",
-        body: "Age limits, privacy and respectful behavior online should be clear topics at home and among parents.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
       {
         sectionKey: "gaming",
         title: "Gaming",
-        summary:
+        paragraphs: [
           "Agree on time, content and breaks in advance, and pay attention to language, spending and who children play with.",
-        body: "Agree on time, content and breaks in advance, and pay attention to language, spending and who children play with.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
       {
         sectionKey: "generelle-rad",
         title: "General advice",
-        summary:
+        paragraphs: [
           "Start conversations early, stay aligned as parents and make simple rules that work in everyday life.",
-        body: "Start conversations early, stay aligned as parents and make simple rules that work in everyday life.",
-        recommendations: [],
+        ],
+        bullets: [],
       },
     ],
   },
