@@ -28,7 +28,7 @@ export default function YouTubeKlippPage() {
           }}
         >
           <iframe
-            src="https://www.youtube.com/embed/PRgBdAAkmcs?start=527&end=699&autoplay=1&mute=1&playsinline=1&rel=0"
+            src="https://www.youtube.com/embed/PRgBdAAkmcs?start=527&end=699&autoplay=1&playsinline=1&rel=0"
             title="YouTube-klipp 08:47–11:39"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerPolicy="strict-origin-when-cross-origin"
@@ -43,9 +43,8 @@ export default function YouTubeKlippPage() {
           />
         </div>
         <p style={{ opacity: 0.75, fontSize: 14, lineHeight: 1.5 }}>
-          Klippet starter automatisk på 08:47 og stopper på 11:39. Videoen
-          starter uten lyd fordi nettlesere normalt blokkerer autoplay med lyd;
-          slå på lyd i YouTube-spilleren.
+          Klippet forsøker å starte automatisk med lyd på 08:47 og stopper på
+          11:39. Hvis nettleseren blokkerer autoplay med lyd, trykk Play én gang.
         </p>
       </div>
     </main>
